@@ -1,3 +1,4 @@
+
 <body class="container">
 <div class="page-header">
     <h1>Simple Auth-System</h1>
@@ -9,11 +10,12 @@
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <ul class="nav navbar-nav">
                 <li><a href="/">Home</a></li>
+                <li><a href="/signup">Sign Up</a></li>
                 <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/dnssettings">DNS Settings</a></li>
             </ul>
 
             <ul class="nav navbar-nav navbar-right">
+                <li><a href="/login">Log In</a></li>
                 <li><a href="/logout">Log Out</a></li>
             </ul>
         </div><!-- /.navbar-collapse -->
@@ -21,6 +23,21 @@
 </nav>
 
 <div class="container row">
-    <h1>Hi {{username}}, Welcome to your Dashboard</h1>
+    <div class="jumbotron col-sm-4 pull-center">
+        <form action="/login" method="post">
+            <div>
+                <label>Username:</label>
+                <input type="text" name="username"/>
+            </div>
+            <div>
+                <label>Password:</label>
+                <input type="password" name="password"/>
+            </div>
+            <div>
+                <input class="btn btn-primary" type="submit" value="Log In"/>
+            </div>
+        </form>
+    </div>
 </div>
 </body>
+</html>

